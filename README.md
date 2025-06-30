@@ -4,6 +4,9 @@ A modern, full-stack task management application built with Next.js (App Router)
 
 
 
+![App Screenshot](./images/screenshot.png)
+
+
 ## test user
 
 username: testuser
