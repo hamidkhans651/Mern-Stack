@@ -4,6 +4,11 @@ A modern, full-stack task management application built with Next.js (App Router)
 
 
 
+## Project Screenshot
+
+![Real Estate Platform Screenshot](public/assets/screenshots/taskapp.png)
+
+
 ## test user
 
 username: testuser
