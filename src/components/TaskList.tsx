@@ -30,12 +30,14 @@ export default function TaskList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const limit = 10;
 
-  const fetchTasks = async (pageNum = 1) => {
+  const fetchTasks = async (pageNum = 1, searchValue = search) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tasks?page=${pageNum}&limit=${limit}`);
+      const response = await fetch(`/api/tasks?page=${pageNum}&limit=${limit}&search=${encodeURIComponent(searchValue)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
       }
@@ -52,10 +54,20 @@ export default function TaskList() {
     }
   };
 
+  // Debounced search effect
   useEffect(() => {
-    fetchTasks(page);
+    const handler = setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [searchInput]);
+
+  useEffect(() => {
+    fetchTasks(page, search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   const handleAddTask = async (taskData: Omit<Task, '_id'>) => {
     try {
@@ -72,7 +84,7 @@ export default function TaskList() {
       }
 
       // Refetch first page after adding
-      fetchTasks(1);
+      fetchTasks(1, search);
       setShowAddTask(false);
     } catch (err) {
       setError('Error adding task');
@@ -95,7 +107,7 @@ export default function TaskList() {
       }
 
       // Refetch current page after update
-      fetchTasks(page);
+      fetchTasks(page, search);
     } catch (err) {
       setError('Error updating task');
       console.error(err);
@@ -113,7 +125,7 @@ export default function TaskList() {
       }
 
       // Refetch current page after delete
-      fetchTasks(page);
+      fetchTasks(page, search);
     } catch (err) {
       setError('Error deleting task');
       console.error(err);
@@ -138,6 +150,15 @@ export default function TaskList() {
 
   return (
     <div className="mb-8">
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+        <input
+          type="text"
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          placeholder="Search by title..."
+          style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #ccc', fontSize: 15 }}
+        />
+      </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         <button
           onClick={() => setShowAddTask(true)}

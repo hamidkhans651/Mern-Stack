@@ -14,15 +14,21 @@ export async function GET(request: Request) {
 
     await connectDB();
 
-    // Pagination
+    // Pagination & Search
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const skip = (page - 1) * limit;
+    const search = searchParams.get('search') || '';
 
     const userId = (session.user as { id: string }).id;
-    const total = await Task.countDocuments({ user: userId });
-    const tasks = await Task.find({ user: userId })
+    const query: any = { user: userId };
+    if (search) {
+      query.title = { $regex: search, $options: 'i' };
+    }
+
+    const total = await Task.countDocuments(query);
+    const tasks = await Task.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
