@@ -2,6 +2,15 @@
 
 A modern, full-stack task management application built with Next.js (App Router), MongoDB, and plain CSS. Features user authentication, CRUD for tasks, and a clean, responsive UI.
 
+
+
+## test user
+
+username: testuser
+email: testuser323@gmail.com
+password: test232$$
+
+
 ---
 
 ## Features
