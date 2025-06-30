@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db';
 import Task from '@/models/taskModel';
 import { authOptions } from '../auth/authOptions';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -14,9 +14,25 @@ export async function GET() {
 
     await connectDB();
 
-    const tasks = await Task.find({ user: (session.user as { id: string }).id }).sort({ createdAt: -1 });
+    // Pagination
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json(tasks);
+    const userId = (session.user as { id: string }).id;
+    const total = await Task.countDocuments({ user: userId });
+    const tasks = await Task.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return NextResponse.json({
+      tasks,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     console.error('Error in GET /api/tasks:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

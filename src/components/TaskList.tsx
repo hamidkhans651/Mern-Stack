@@ -13,6 +13,13 @@ interface Task {
   dueDate?: string;
 }
 
+interface PaginatedTasks {
+  tasks: Task[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,15 +27,23 @@ export default function TaskList() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Task['priority'] | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 10;
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (pageNum = 1) => {
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/tasks');
+      const response = await fetch(`/api/tasks?page=${pageNum}&limit=${limit}`);
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
       }
-      const data = await response.json();
-      setTasks(data);
+      const data: PaginatedTasks = await response.json();
+      setTasks(data.tasks);
+      setTotalPages(data.totalPages);
+      setTotal(data.total);
+      setPage(data.page);
     } catch (err) {
       setError('Error loading tasks');
       console.error(err);
@@ -38,8 +53,9 @@ export default function TaskList() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    fetchTasks(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const handleAddTask = async (taskData: Omit<Task, '_id'>) => {
     try {
@@ -55,8 +71,8 @@ export default function TaskList() {
         throw new Error('Failed to add task');
       }
 
-      const newTask = await response.json();
-      setTasks([newTask, ...tasks]);
+      // Refetch first page after adding
+      fetchTasks(1);
       setShowAddTask(false);
     } catch (err) {
       setError('Error adding task');
@@ -78,10 +94,8 @@ export default function TaskList() {
         throw new Error('Failed to update task');
       }
 
-      const updatedTask = await response.json();
-      setTasks(tasks.map(task => 
-        task._id === taskId ? updatedTask : task
-      ));
+      // Refetch current page after update
+      fetchTasks(page);
     } catch (err) {
       setError('Error updating task');
       console.error(err);
@@ -98,7 +112,8 @@ export default function TaskList() {
         throw new Error('Failed to delete task');
       }
 
-      setTasks(tasks.filter(task => task._id !== taskId));
+      // Refetch current page after delete
+      fetchTasks(page);
     } catch (err) {
       setError('Error deleting task');
       console.error(err);
@@ -178,6 +193,26 @@ export default function TaskList() {
       {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center mt-2 text-lg" style={{ color: '#888' }}>No tasks found. Add a new task to get started!</div>
       )}
+      {/* Pagination Controls */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 32 }}>
+        <button
+          onClick={() => setPage(page - 1)}
+          disabled={page === 1}
+          style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #ccc', background: page === 1 ? '#eee' : '#2563eb', color: page === 1 ? '#888' : 'white', fontWeight: 500, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+        >
+          Previous
+        </button>
+        <span style={{ fontWeight: 500 }}>
+          Page {page} of {totalPages} ({total} tasks)
+        </span>
+        <button
+          onClick={() => setPage(page + 1)}
+          disabled={page === totalPages}
+          style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #ccc', background: page === totalPages ? '#eee' : '#2563eb', color: page === totalPages ? '#888' : 'white', fontWeight: 500, cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 } 
